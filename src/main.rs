@@ -113,7 +113,8 @@ fn main() -> Result<(), ()> {
         for file_update in file_updates_rx {
             match file_update {
                 FileUpdate::FullRescan => {
-                    todo!("do a full rescan");
+                    // reload all tickets
+                    load_tickets(ticket_root, &mut tickets_by_status).expect("Could not load tickets");
                 },
                 FileUpdate::Paths(paths) => {
                     todo!("do a partial rescan of path {:?}", paths);
