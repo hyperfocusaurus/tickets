@@ -1,10 +1,14 @@
 mod ticket;
+mod ui;
 use std::sync::mpsc::{Sender, Receiver, channel};
 use std::collections::HashMap;
 use ticket::Ticket;
 use std::fs::{File, read_dir, DirEntry};
 use notify::{Config, Watcher, RecursiveMode, RecommendedWatcher};
 use std::thread;
+use ui::{ui_init, RenderSurface, Scalar};
+use ui::components::{TabState, text, tabs, tab_contents, list_view, board_view, frame};
+use ui::backends::RenderBackends;
 
 // the maximum depth of recursion that find_tickets will run for
 const MAX_DEPTH: usize = 64;
@@ -122,6 +126,36 @@ fn main() -> Result<(), ()> {
             }
         }
     });
+
+    // the winit backend functions as both an InputModule and a RenderBackend
+    let backend = RenderBackends::winit();
+
+    let tabstate = TabState::new();
+
+    // set up tabs component
+    let ticket_tabs = tabs(tabstate, vec![text("board".to_string()), text("list".to_string())]);
+
+    const window_width: Scalar = 800;
+    const window_height: Scalar = 600;
+    ui_init(
+            backend,
+            RenderSurface::new(
+                window_width,
+                window_height,
+                window_width, // the top level render surface has a stride equal to the width of
+                              // the window
+            ),
+            frame(
+                vec![ticket_tabs,
+                tab_contents(tabstate, "board",
+                    vec![board_view(vec![]),]
+                    ),
+                tab_contents(tabstate, "list",
+                    vec![list_view(vec![]),]
+                    ),]
+            ),
+            backend
+        );
 
     // join all threads.  I'm not sure if this is the most idiomatic/sane way to do it,
     // but it's somewhat concise and clear to me at least.
